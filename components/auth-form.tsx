@@ -1,8 +1,7 @@
-"use client";
-
-import Link from "next/link";
-import React, { useState, FormEvent } from "react";
-import { signup } from "../actions/auth_actions";
+'use client';
+import Link from 'next/link';
+import { useState, FormEvent } from 'react';
+import { auth } from '../actions/auth_actions';
 
 interface FormErrors {
   email?: string;
@@ -10,28 +9,24 @@ interface FormErrors {
   form?: string;
 }
 
-export default function AuthForm() {
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [errors, setErrors] = useState<FormErrors>({});
+export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
+  const [formState, setFormState] = useState<{ errors?: FormErrors }>({});
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const formData = new FormData();
-    formData.append("email", email);
-    formData.append("password", password);
+    formData.append('email', email);
+    formData.append('password', password);
 
-    try {
-      const response = await signup({ formData });
+    const response = await auth(mode, formState, formData);
 
-      if (response?.errors) {  // Check if response and errors exist
-        setErrors(response.errors);
-      } else {
-        // Handle successful signup (e.g., redirect or show success message)
-      }
-    } catch (error) {
-      setErrors({ form: "An unexpected error occurred. Please try again." });
+    if (response?.errors) {
+      setFormState({ errors: response.errors });
+    } else {
+      // Handle success (e.g., navigate to a different page or show a success message)
     }
   };
 
@@ -48,8 +43,8 @@ export default function AuthForm() {
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+           autoComplete="username"
         />
-        {errors.email && <span>{errors.email}</span>}
       </p>
       <p>
         <label htmlFor="password">Password</label>
@@ -59,19 +54,27 @@ export default function AuthForm() {
           id="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
         />
-        {errors.password && <span>{errors.password}</span>}
       </p>
-      {errors.form && (
+      {formState.errors && (
         <ul id="form-errors">
-          <li>{errors.form}</li>
+          {Object.keys(formState.errors).map((error) => (
+            <li key={error}>{formState.errors[error]}</li>
+          ))}
         </ul>
       )}
       <p>
-        <button type="submit">Create Account</button>
+        <button type="submit">
+          {mode === 'login' ? 'Login' : 'Create Account'}
+        </button>
       </p>
       <p>
-        <Link href="/">Login with existing account.</Link>
+        {mode === 'login' ? (
+          <Link href="/?mode=signup">Create an account.</Link>
+        ) : (
+          <Link href="/?mode=login">Login with existing account.</Link>
+        )}
       </p>
     </form>
   );
